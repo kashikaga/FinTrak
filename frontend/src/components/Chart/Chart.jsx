@@ -1,54 +1,70 @@
+import React, { useEffect, useState } from 'react'
+import { Line } from 'react-chartjs-2'
+import { Chart as ChartJS, LineElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend } from 'chart.js'
+import axios from 'axios'
 import './Chart.scss'
 
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts'
+// Register Chart.js components
+ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend)
 
-const data = [
-  { name: 'Jan', Total: 1200 },
-  { name: 'Feb', Total: 2200 },
-  { name: 'Mar', Total: 800 },
-  { name: 'Apr', Total: 1600 },
-  { name: 'May', Total: 900 },
-  { name: 'Jun', Total: 3600 },
-  { name: 'Jul', Total: 500 },
-  { name: 'Aug', Total: 110 },
-  { name: 'Sep', Total: 448 },
-]
+const Chart = ({ title, height }) => {
+  const [chartData, setChartData] = useState({
+    labels: [],
+    datasets: [
+      {
+        label: 'Total Transactions',
+        data: [],
+        borderColor: '#8884d8',
+        backgroundColor: 'rgba(136, 132, 216, 0.5)',
+        fill: true,
+      },
+    ],
+  })
 
-const Chart = ({ aspect, title, height }) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/transactions', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }, // Include auth if required
+        })
+        const transactions = response.data
+
+        // Process transactions into monthly totals
+        const monthlyTotals = {}
+        transactions.forEach(({ amount, date }) => {
+          const month = new Date(date).toLocaleString('en-US', { month: 'short' })
+          monthlyTotals[month] = (monthlyTotals[month] || 0) + amount
+        })
+
+        const labels = Object.keys(monthlyTotals).sort()
+        const data = labels.map(month => monthlyTotals[month])
+
+        setChartData({
+          labels,
+          datasets: [
+            {
+              label: 'Total Transactions',
+              data,
+              borderColor: '#8884d8',
+              backgroundColor: 'rgba(136, 132, 216, 0.5)',
+              fill: true,
+            },
+          ],
+        })
+      } catch (error) {
+        console.error('Error fetching transactions:', error)
+      }
+    }
+
+    fetchData()
+  }, [])
+
   return (
     <div className='chart'>
       <div className='title'>{title}</div>
-      <ResponsiveContainer width='100%' height={height} aspect={aspect}>
-        <AreaChart
-          width={730}
-          height={250}
-          data={data}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id='total' x1='0' y1='0' x2='0' y2='1'>
-              <stop offset='5%' stopColor='#8884d8' stopOpacity={0.8} />
-              <stop offset='95%' stopColor='#8884d8' stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis dataKey='name' stroke='gray' />
-          <CartesianGrid strokeDasharray='3 3' className='chartGrid' />
-          <Tooltip />
-          <Area
-            type='monotone'
-            dataKey='Total'
-            stroke='#8884d8'
-            fillOpacity={1}
-            fill='url(#total)'
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <div style={{ height }}>
+        <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+      </div>
     </div>
   )
 }

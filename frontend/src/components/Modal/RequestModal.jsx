@@ -104,7 +104,7 @@ const RequestModal = ({ setRequestModalOpen, requestTo }) => {
                       max='100000'
                       value={amount}
                       onChange={onChange}
-                      placeholder='$1000'
+                      placeholder='Rs. 80000'
                       required
                     />
                   </div>
