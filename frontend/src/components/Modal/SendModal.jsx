@@ -106,7 +106,7 @@ const SendModal = ({ setSendModalOpen, receiverId }) => {
                       onChange={onChange}
                       min='1'
                       max='100000'
-                      placeholder='$1000'
+                      placeholder='Rs. 80000'
                       required
                     />
                   </div>
